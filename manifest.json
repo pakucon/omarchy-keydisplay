@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "jp.keydisplay",
+  "name": "Key Display",
+  "version": "1.0.0",
+  "author": "Jusron Permana",
+  "license": "MIT",
+  "description": "Shows the last key or key combination you pressed in the bar. Clicking does nothing.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Key Display",
+    "category": "Utilities",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
