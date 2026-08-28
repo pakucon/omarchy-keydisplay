@@ -2,6 +2,8 @@
 
 Shows the last key or key combination you pressed anywhere on the system, live in the Omarchy bar. Clicking the widget does nothing.
 
+![Key Display](preview.png)
+
 The widget captures global keyboard input by reading `/dev/input/event*` directly (via a small Python helper), so it works no matter which application has focus. The moment you release all keys, the display clears.
 
 ## Requirements
