@@ -10,11 +10,9 @@ The widget captures global keyboard input by reading `/dev/input/event*` directl
 
 - An Omarchy (Quattro) shell.
 - Your user must be in the `input` group, so the helper can read keyboard devices.
-  Check with `groups`; if you are not a member, add yourself and re-login:
-
-  ```sh
-  sudo usermod -aG input "$USER"
-  ```
+  Check with `groups`. If you are not a member, add your user to the `input`
+  group through your distribution's user-management tool (or ask an administrator),
+  then log out and back in for the change to take effect.
 
 ## Install
 
