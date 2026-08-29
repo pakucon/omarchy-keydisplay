@@ -3,21 +3,25 @@ import Quickshell
 import Quickshell.Io
 import qs.Ui
 
-// Shows the last key or key combination pressed anywhere on the system.
-// Reads keyboard events from a helper that monitors /dev/input/event*, then
-// prints the resolved combo one line at a time; we stream each line into the
-// bar label. Clicking does nothing by design.
+// Shows the last Omarchy keybinding you pressed, captured in a scoped way.
+// A helper (keymonitor.py) runs as the dedicated "keydisplay" user — the only
+// member of the system "input" group — so your other processes never gain
+// access to raw keyboard events. The helper only ever prints combos that match
+// a real Omarchy keybinding (from `omarchy menu keybindings --print`); typed
+// text such as passwords is read by the helper but never printed or displayed.
 
 BarWidget {
   id: root
   moduleName: "jp.keydisplay"
 
   property string display: "⌨"
+  property string pluginPath: String(Qt.resolvedUrl("keymonitor.py")).replace("file://", "")
+  property string dir: pluginPath.substring(0, pluginPath.lastIndexOf("/") + 1)
 
   function onCombo(line) {
     var text = String(line || "").trim()
     if (text === "__clear__") { root.display = "⌨"; return }
-    if (text.length > 0 && text !== "error:no keyboard devices")
+    if (text.length > 0 && !text.startsWith("error:"))
       root.display = text
   }
 
@@ -27,7 +31,9 @@ BarWidget {
   Process {
     id: keyProc
     running: true
-    command: ["python3", String(Qt.resolvedUrl("keymonitor.py")).replace("file://", "")]
+    command: ["/bin/sh", "-c",
+      "/usr/share/omarchy/bin/omarchy menu keybindings --print > '" + dir + "bindings.txt' 2>/dev/null; " +
+      "exec /usr/bin/sudo -u keydisplay /usr/bin/python3 '" + dir + "keymonitor.py'"]
 
     stdout: SplitParser {
       onRead: function(line) { root.onCombo(line) }
@@ -39,6 +45,6 @@ BarWidget {
     anchors.fill: parent
     bar: root.bar
     text: root.display
-    tooltipText: "Last key pressed"
+    tooltipText: "Last keybinding pressed"
   }
 }

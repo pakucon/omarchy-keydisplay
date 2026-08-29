@@ -1,18 +1,45 @@
 # Key Display
 
-Shows the last key or key combination you pressed anywhere on the system, live in the Omarchy bar. Clicking the widget does nothing.
+Shows the last **Omarchy keybinding** you pressed, live in the Omarchy bar. Clicking the widget does nothing.
 
-![Key Display](preview.png)
+The widget only ever displays combos that match a real Omarchy keybinding (from `omarchy menu keybindings --print`). Typed text — including passwords you enter in other applications — is never captured, printed, or displayed.
 
-The widget captures global keyboard input by reading `/dev/input/event*` directly (via a small Python helper), so it works no matter which application has focus. The moment you release all keys, the display clears.
+## Privacy model (why this is safe)
+
+This plugin needs raw keyboard access to know which keybinding you pressed. That access is **scoped**, not system-wide:
+
+- A small helper (`keymonitor.py`) runs as a **dedicated, unprivileged user** (`keydisplay`) that is the *only* member of the system `input` group.
+- Your normal user and every other process you run gain **no** new access to `/dev/input`, so they cannot read global keystrokes (no system-wide keylogger).
+- The helper reads keystrokes **only to match them against the keybinding list**, and prints solely the matching combo. Arbitrary keystrokes are discarded.
+
+In short: the privilege is scoped to this plugin, and the output is limited to keybindings.
 
 ## Requirements
 
 - An Omarchy (Quattro) shell.
-- Your user must be in the `input` group, so the helper can read keyboard devices.
-  Check with `groups`. If you are not a member, add your user to the `input`
-  group through your distribution's user-management tool (or ask an administrator),
-  then log out and back in for the change to take effect.
+- A one-time, sudo setup that creates the scoped `keydisplay` user (see Setup). Your user does **not** need to be in the `input` group.
+
+## Setup (one-time, needs sudo)
+
+Create the scoped user and let your user launch its helper without a password:
+
+```sh
+sudo useradd -r -s /usr/bin/nologin -G input keydisplay
+
+# Replace <PLUGIN_DIR> with this plugin's directory, e.g.
+#   /home/$USER/.config/omarchy/plugins/jp.keydisplay
+sudo tee /etc/sudoers.d/keydisplay >/dev/null <<EOF
+$USER ALL=(keydisplay) NOPASSWD: /usr/bin/python3 <PLUGIN_DIR>/keymonitor.py
+EOF
+sudo chmod 0440 /etc/sudoers.d/keydisplay
+sudo visudo -c
+```
+
+`<PLUGIN_DIR>` is the path printed by:
+
+```sh
+ls -d ~/.config/omarchy/plugins/jp.keydisplay
+```
 
 ## Install
 
@@ -22,9 +49,7 @@ omarchy plugin add https://github.com/pakucon/omarchy-keydisplay.git --enable
 
 ## Usage
 
-Press any key or combination — for example `Shift + A` or
-`Super + Ctrl + Shift + Space`. The combo appears in the bar and clears the
-instant you release it.
+Press any Omarchy keybinding (e.g. `Super + K`, `Super + Space`, `Print`). The combo appears in the bar and clears the moment you release all keys. Pressing ordinary keys or typing text shows nothing.
 
 ## Configure
 
@@ -38,12 +63,10 @@ omarchy bar move jp.keydisplay --section center
 
 ```sh
 omarchy plugin remove jp.keydisplay
+sudo userdel keydisplay          # optional: remove the scoped user
+sudo rm /etc/sudoers.d/keydisplay # optional: remove the sudoers rule
 ```
 
 ## How it works
 
-A Python helper (`keymonitor.py`) opens every `/dev/input/event*` device
-read-only (no grab, no second Quickshell process) and streams each resolved
-key combo to the QML widget over stdout. Key names are resolved from the
-Linux keycode table (`/usr/include/linux/input-event-codes.h` when present,
-otherwise a built-in map), so there are no external dependencies.
+A helper reads `/dev/input/event*` **as the `keydisplay` user** (the only member of `input`) and streams each keybinding combo to the QML widget over stdout. Keybinding names come from `omarchy menu keybindings --print`; any combo that is not a known keybinding is dropped before it reaches the widget. There are no external dependencies beyond Python 3.

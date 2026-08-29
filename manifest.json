@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "author": "Jusron Permana",
   "license": "MIT",
-  "description": "Shows the last key or key combination you pressed in the bar. Clicking does nothing.",
+  "description": "Shows the last Omarchy keybinding you pressed, live in the bar. Capture is scoped to a dedicated user and only keybindings are displayed.",
   "kinds": [
     "bar-widget"
   ],
